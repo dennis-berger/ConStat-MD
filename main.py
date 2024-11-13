@@ -1,71 +1,89 @@
 import json
-import subprocess
 from datasets import load_dataset
+from transformers import AutoTokenizer, AutoModelForCausalLM
+import torch
+import re
 
-# Step 1: Download Dataset
-def download_dataset():
-    dataset = load_dataset("google-research-datasets/mbpp", "full")
-    return dataset
-
-# Step 2: Execute Compilation
-def compile_code(code_snippet):
-    # Save code to a temporary file and attempt to run it
-    with open("temp_code.py", "w") as f:
-        f.write(code_snippet)
+def generate_code(model, tokenizer, task_description):
+    # Define prompt to get only the function code
+    prompt = f"Write only the Python function code for the following task:\n{task_description}"
+    inputs = tokenizer(prompt, return_tensors="pt")
     
-    # Execute the file and capture output
-    result = subprocess.run(["python", "temp_code.py"], capture_output=True, text=True)
-    # Check if there was an error during execution
-    return result.returncode == 0, result.stderr if result.returncode != 0 else result.stdout
+    # Generate code with controlled output length
+    with torch.no_grad():
+        generated_ids = model.generate(inputs.input_ids, max_length=200, temperature=0.7)
+    generated_code = tokenizer.decode(generated_ids[0], skip_special_tokens=True)
+    
+    # Filter lines to retain only code-related lines, removing explanations
+    clean_code = "\n".join(
+        line for line in generated_code.splitlines() 
+        if line.strip() and not any(kw in line for kw in ["#", "//", "Explanation", "Note", ":", "Output"])
+    )
+    return clean_code
 
-# Step 3: Query Model (Stubbed for illustration)
-def query_model(task_description):
-    # Replace this function with a call to the actual model you plan to use
-    # Example placeholder for model output based on description
-    code_output = f"# Sample generated code for: {task_description}\nprint('Hello, world!')"
-    return code_output
+def test_generated_code(generated_code, test_cases):
+    # Dictionary to store the results
+    test_results = []
+    all_tests_passed = True
 
-# Step 4: Run Test Case (Stubbed with example test case)
-def run_test_case(code_snippet):
-    # Placeholder test: Check if code contains 'print' as an example criteria
     try:
-        compiled_success, output = compile_code(code_snippet)
-        # Simple check for successful compilation and expected output
-        passed = compiled_success and "Hello, world!" in output
+        # Compile and execute the generated code
+        exec(generated_code, globals())
+
+        # Run each test case
+        for test_code in test_cases:
+            try:
+                # Execute the test case
+                exec(test_code, globals())
+                test_results.append(True)
+            except AssertionError:
+                # If assertion fails, mark as False
+                test_results.append(False)
+                all_tests_passed = False
     except Exception as e:
-        passed = False
-        output = str(e)
-    return passed, output
-
-# Step 5: Record Results in JSON
-def record_results(task_id, description, code, passed, output):
-    results = {
-        "task_id": task_id,
-        "description": description,
-        "code": code,
-        "passed": passed,
-        "output": output
-    }
-    with open("results.json", "a") as f:
-        json.dump(results, f, indent=4)
-        f.write("\n")  # To separate each JSON record in the file
-
-# Main Execution Flow
-if __name__ == "__main__":
-    # Download dataset and retrieve sample tasks
-    dataset = download_dataset()
+        # If the code itself failed to compile, mark all as False
+        print(f"Compilation or execution error: {e}")
+        all_tests_passed = False
+        test_results = [False] * len(test_cases)
     
-    for task in dataset['train']:
-        task_id = task['task_id']
-        description = task['text']
-        
-        # Step 3: Query the model for code based on the task description
-        generated_code = query_model(description)
-        
-        # Step 4: Run the test case
-        passed, output = run_test_case(generated_code)
-        
-        # Step 5: Record the result in JSON
-        record_results(task_id, description, generated_code, passed, output)
-        
-    print("All tasks processed. Results recorded in results.json.")
+    return test_results, all_tests_passed
+
+def main():
+    # Load dataset
+    dataset = load_dataset("google-research-datasets/mbpp", "sanitized", split="train")
+
+    # Initialize model and tokenizer
+    # try meta-llama/Llama-2-7b-chat-hf
+    model_name = "Salesforce/codegen-350M-multi"
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = AutoModelForCausalLM.from_pretrained(model_name)
+
+    results = []
+
+    # Loop over dataset examples
+    for example in dataset:
+        task_description = example["prompt"]
+        test_code = example["test_list"]
+        code_mbpp = example["code"]
+
+        # Generate code
+        generated_code = generate_code(model, tokenizer, task_description)
+
+        # Run tests on the generated code
+        test_results, all_tests_passed = test_generated_code(generated_code, test_code)
+
+        # Record results
+        result = {
+            "task_description": task_description,
+            "generated_code": generated_code,
+            "test_code": test_code,
+            "test_results": test_results,
+            "all_tests_passed": all_tests_passed
+        }
+        results.append(result)
+    # Save results to a JSON file
+    with open("code_generation_results.json", "w") as f:
+        json.dump(results, f, indent=4)
+
+if __name__ == "__main__":
+    main()
