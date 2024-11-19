@@ -4,6 +4,13 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
 import re
 
+def clean_code(generated_code):
+    # Remove Markdown formatting (triple backticks and "python")
+    if generated_code.startswith("```"):
+        generated_code = re.sub(r"```(python)?", "", generated_code)  # Remove ```python or ```
+        generated_code = generated_code.replace("```", "").strip()  # Remove closing ```
+    return generated_code
+
 def generate_code(model, tokenizer, task_description):
     # Define prompt to get only the function code
     prompt = f"Write only the Python function code for the following task:\n{task_description}"
@@ -28,7 +35,8 @@ def generate_code(model, tokenizer, task_description):
     ]
 
     response = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
-    return response
+    clean_generated_code = clean_code(response)
+    return clean_generated_code
 
 def test_generated_code(generated_code, test_cases):
     # Dictionary to store the results
