@@ -8,26 +8,17 @@ def generate_code(model, tokenizer, task_description):
     # Define prompt to get only the function code
     prompt = f"Write only the Python function code for the following task:\n{task_description}"
     
-    messages = [
-        {"role": "system", "content": "You are Qwen, created by Alibaba Cloud. You are a helpful assistant."},
-        {"role": "user", "content": prompt}
-    ]
-    text = tokenizer.apply_chat_template(
-        messages,
-        tokenize=False,
-        add_generation_prompt=True
-    )
-    model_inputs = tokenizer([text], return_tensors="pt").to(model.device)
+    # Directly tokenize the prompt
+    model_inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
 
+    # Generate code
     generated_ids = model.generate(
         **model_inputs,
         max_new_tokens=512
     )
-    generated_ids = [
-        output_ids[len(input_ids):] for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
-    ]
 
-    response = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
+    # Decode the response
+    response = tokenizer.decode(generated_ids[0], skip_special_tokens=True)
     return response
 
 def test_generated_code(generated_code, test_cases):
