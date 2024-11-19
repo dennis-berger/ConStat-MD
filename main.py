@@ -9,7 +9,7 @@ def generate_code(model, tokenizer, task_description):
     prompt = f"Write only the Python function code for the following task:\n{task_description}"
     
     messages = [
-        {"role": "system", "content": "You are Qwen, created by Alibaba Cloud. You are a helpful assistant."},
+        {"role": "system", "content": "You are a coding assistant that provides only Python code snippets."},
         {"role": "user", "content": prompt}
     ]
     text = tokenizer.apply_chat_template(
