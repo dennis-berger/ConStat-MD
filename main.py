@@ -8,17 +8,26 @@ def generate_code(model, tokenizer, task_description):
     # Define prompt to get only the function code
     prompt = f"Write only the Python function code for the following task:\n{task_description}"
     
-    # Directly tokenize the prompt
-    model_inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+    messages = [
+        {"role": "system", "content": "You are Qwen, created by Alibaba Cloud. You are a helpful assistant."},
+        {"role": "user", "content": prompt}
+    ]
+    text = tokenizer.apply_chat_template(
+        messages,
+        tokenize=False,
+        add_generation_prompt=True
+    )
+    model_inputs = tokenizer([text], return_tensors="pt").to(model.device)
 
-    # Generate code
     generated_ids = model.generate(
         **model_inputs,
         max_new_tokens=512
     )
+    generated_ids = [
+        output_ids[len(input_ids):] for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
+    ]
 
-    # Decode the response
-    response = tokenizer.decode(generated_ids[0], skip_special_tokens=True)
+    response = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
     return response
 
 def test_generated_code(generated_code, test_cases):
@@ -55,12 +64,12 @@ def main():
     # Initialize model and tokenizer
     # try meta-llama/Llama-2-7b-chat-hf
     model_name = "Qwen/Qwen2.5-Coder-7B-Instruct"
-    tokenizer = AutoModelForCausalLM.from_pretrained(
+    model = AutoModelForCausalLM.from_pretrained(
         model_name,
         torch_dtype="auto",
         device_map="auto"
     )
-    model = AutoModelForCausalLM.from_pretrained(model_name)
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
 
     results = []
 
