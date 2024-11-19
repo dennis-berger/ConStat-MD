@@ -1,12 +1,15 @@
 #!/bin/bash
-#SBATCH --job-name=codegen    # Job name
-#SBATCH --output=output.txt   # Output file
-#SBATCH --ntasks=1            # Number of tasks (processes)
-#SBATCH --cpus-per-task=4     # Number of CPU cores per task
-#SBATCH --mem=16GB            # Memory per CPU
-#SBATCH --time=4:00:00        # Time limit
+#SBATCH --job-name=codegen_gpu         # Job name
+#SBATCH --output=output.txt            # Output file
+#SBATCH --ntasks=1                     # Number of tasks
+#SBATCH --cpus-per-task=4              # Number of CPU cores per task
+#SBATCH --gres=gpu:rtx4090:1           # Request 1 Nvidia RTX 4090 GPU
+#SBATCH --mem=90GB                     # Memory allocation (90GB per RTX 4090 GPU)
+#SBATCH --partition=gpu                # Use the GPU partition
+#SBATCH --time=4:00:00                 # Time limit (hh:mm:ss)
 
-# Load Python and Anaconda
+# Load CUDA and Python environment
+module load CUDA/11.8.0
 module load Anaconda3
 eval "$(conda shell.bash hook)"
 
@@ -26,7 +29,7 @@ conda install -y pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c 
 pip install transformers datasets
 
 # Run the Python script
-echo "Running code generation script..."
+echo "Running code generation script with GPU support..."
 python /storage/homefs/db18y058/ConStat-MD/main.py
 
 echo "Job finished successfully."
