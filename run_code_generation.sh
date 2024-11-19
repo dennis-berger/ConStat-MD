@@ -26,7 +26,7 @@ conda activate $ENV_NAME
 # Install necessary libraries
 echo "Installing required packages..."
 conda install -y pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia
-pip install transformers datasets
+pip install transformers datasets "accelerate>=0.26.0"
 
 # Run the Python script
 echo "Running code generation script with GPU support..."
