@@ -12,8 +12,16 @@ def clean_code(generated_code):
     return generated_code
 
 def generate_code(model, tokenizer, task_description, test_code):
+    function_name = extract_function_name_from_tests(test_code)
+    if not function_name:
+        raise ValueError("Function name could not be extracted from test cases.")
+
     # Define prompt to get only the function code
-    prompt = f"Write only the Python function code for the following task:\n{task_description}\nIt must pass following tests:\n{test_code}"
+    prompt = (
+        f"Write only the Python function code for the following task:\n"
+        f"{task_description}\n"
+        f"The function must be named '{function_name}'."
+    )
     
     messages = [
         {"role": "system", "content": "You are a coding assistant that provides only Python code snippets."},
@@ -37,6 +45,26 @@ def generate_code(model, tokenizer, task_description, test_code):
     response = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
     clean_generated_code = clean_code(response)
     return clean_generated_code
+
+def extract_function_name_from_tests(test_cases):
+    """
+    Extracts the function name from the test cases.
+    
+    Args:
+        test_cases (list): A list of test case strings.
+    
+    Returns:
+        str: The extracted function name, or None if not found.
+    """
+    # Pattern to match function names (e.g., "function_name" in "assert function_name(...)")
+    pattern = r"assert\s+(\w+)\s*\("
+    
+    for test in test_cases:
+        match = re.search(pattern, test)
+        if match:
+            return match.group(1)  # Return the function name
+    return None  # Return None if no function name is found
+
 
 def test_generated_code(generated_code, test_cases):
     # Dictionary to store the results
