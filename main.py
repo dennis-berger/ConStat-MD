@@ -11,17 +11,7 @@ def clean_code(generated_code):
         generated_code = generated_code.replace("```", "").strip()  # Remove closing ```
     return generated_code
 
-def generate_code(model, tokenizer, task_description, test_code):
-    function_name = extract_function_name_from_tests(test_code)
-    if not function_name:
-        raise ValueError("Function name could not be extracted from test cases.")
-
-    # Define prompt to get only the function code
-    prompt = (
-        f"Write only the Python function code for the following task:\n"
-        f"{task_description}\n"
-        f"The function must be named '{function_name}'."
-    )
+def generate_code(model, tokenizer, prompt):
     
     messages = [
         {"role": "system", "content": "You are a coding assistant that provides only Python code snippets."},
@@ -115,19 +105,31 @@ def main():
         test_code = example["test_list"]
         code_mbpp = example["code"]
 
+        function_name = extract_function_name_from_tests(test_code)
+        if not function_name:
+            raise ValueError("Function name could not be extracted from test cases.")
+
+        # Define prompt to get only the function code
+        prompt = (
+            f"Write only the Python function code for the following task:\n"
+            f"{task_description}\n"
+            f"The function must be named '{function_name}'."
+        )
+
         # Generate code
-        generated_code = generate_code(model, tokenizer, task_description, test_code)
+        generated_code = generate_code(model, tokenizer, prompt)
 
         # Run tests on the generated code
         test_results, all_tests_passed = test_generated_code(generated_code, test_code)
 
         # Record results
         result = {
-            "task_description": task_description,
+            "task_description": prompt,
             "generated_code": generated_code,
             "test_code": test_code,
             "test_results": test_results,
-            "all_tests_passed": all_tests_passed
+            "all_tests_passed": all_tests_passed,
+            "code_mbpp": code_mbpp
         }
         results.append(result)
     # Save results to a JSON file
