@@ -11,9 +11,9 @@ def clean_code(generated_code):
         generated_code = generated_code.replace("```", "").strip()  # Remove closing ```
     return generated_code
 
-def generate_code(model, tokenizer, task_description):
+def generate_code(model, tokenizer, task_description, test_code):
     # Define prompt to get only the function code
-    prompt = f"Write only the Python function code for the following task:\n{task_description}"
+    prompt = f"Write only the Python function code for the following task:\n{task_description}\nIt must pass following tests:\n{test_code}"
     
     messages = [
         {"role": "system", "content": "You are a coding assistant that provides only Python code snippets."},
@@ -88,7 +88,7 @@ def main():
         code_mbpp = example["code"]
 
         # Generate code
-        generated_code = generate_code(model, tokenizer, task_description)
+        generated_code = generate_code(model, tokenizer, task_description, test_code)
 
         # Run tests on the generated code
         test_results, all_tests_passed = test_generated_code(generated_code, test_code)
