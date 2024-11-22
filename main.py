@@ -9,27 +9,34 @@ def clean_code(generated_code):
     if generated_code.startswith("```"):
         generated_code = re.sub(r"```(python)?", "", generated_code)  # Remove ```python or ```
         generated_code = generated_code.replace("```", "").strip()  # Remove closing ```
-    # Remove any descriptive text that might be present before the actual code
+    # Remove any descriptive text that might be present before or after the actual code
     lines = generated_code.splitlines()
-    code_lines = [line for line in lines if not line.strip().startswith("#") and "def " in line]
-    if code_lines:
-        code_start = lines.index(code_lines[0])
-        generated_code = "\n".join(lines[code_start:])
+    # Extract only lines that are part of the code (ignoring any explanations, examples, etc.)
+    code_lines = []
+    inside_function = False
+    for line in lines:
+        if line.strip().startswith("def "):
+            inside_function = True
+        if inside_function:
+            code_lines.append(line)
+        if inside_function and line.strip() == "":  # Empty line after code signals end of function
+            break
+    generated_code = "\n".join(code_lines).strip()
     return generated_code
 
-def generate_code(model, tokenizer, task_description, correct_code):
-    function_name = extract_function_name_from_code(correct_code)
+def generate_code(model, tokenizer, task_description, test_code):
+    function_name = extract_function_name_from_code(code_mbpp)
     if not function_name:
-        print(correct_code)
-        raise ValueError("Function name could not be extracted from test cases.")
+        print(test_code)
+        raise ValueError("Function name could not be extracted from code.")
 
     # Define prompt to get only the function code
     prompt = (
         f"Write only the Python function code for the following task:\n"
         f"{task_description}\n"
-        f"The function must be named '{function_name}'."
+        f"The function must be named '{function_name}'.\n"
+        f"Do not include any explanations, comments, or examples. Provide only the function code."
     )
-    print(prompt)
     messages = [
         {"role": "system", "content": "You are a coding assistant that provides only Python code snippets."},
         {"role": "user", "content": prompt}
