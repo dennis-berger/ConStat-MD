@@ -1,5 +1,5 @@
 import json
-from datasets import load_dataset
+from datasets import Dataset, load_dataset
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
 import re
@@ -95,8 +95,9 @@ def test_generated_code(generated_code, test_cases):
 
 def main():
     # Load dataset
-    dataset = load_dataset("google-research-datasets/mbpp", "sanitized", split="train")
-
+    # dataset = load_dataset("google-research-datasets/mbpp", "sanitized", split="train")
+    dataset = Dataset.load_from_disk("rephrased_dataset")
+    print(dataset)
     # Initialize model and tokenizer
     # try meta-llama/Llama-2-7b-chat-hf
     model_name = "Qwen/Qwen2.5-Coder-7B-Instruct"
