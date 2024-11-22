@@ -47,21 +47,23 @@ def generate_code(model, tokenizer, task_description, correct_code):
     clean_generated_code = clean_code(response)
     return clean_generated_code
 
-def extract_function_name_from_code(correct_code):
+def extract_function_name_from_code(code_mbpp):
     """
-    Extracts the function name from the provided code.
+    Extracts the function name and arguments from the provided code.
     
     Args:
-        correct_code (str): A string containing the function code.
+        code_mbpp (str): A string containing the function code.
     
     Returns:
-        str: The extracted function name, or None if not found.
+        str: The extracted function signature (name and arguments), or None if not found.
     """
-    # Pattern to match the function name in a Python function definition
-    pattern = r"def\s+(\w+)\s*\("
-    match = re.search(pattern, correct_code)
+    # Pattern to match the function name and arguments in a Python function definition
+    pattern = r"def\s+(\w+)\s*\(([^)]*)\)"
+    match = re.search(pattern, code_mbpp)
     if match:
-        return match.group(1)  # Return the function name
+        function_name = match.group(1)  # Extract the function name
+        arguments = match.group(2)  # Extract the arguments
+        return f"{function_name}({arguments})"  # Return the function signature
     return None  # Return None if no function name is found
 
 
@@ -97,7 +99,6 @@ def main():
     # dataset = load_dataset("google-research-datasets/mbpp", "sanitized", split="train")
     dataset = Dataset.load_from_disk("rephrased_dataset")
     # Initialize model and tokenizer
-    # try meta-llama/Llama-2-7b-chat-hf
     model_name = "Qwen/Qwen2.5-Coder-7B-Instruct"
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
