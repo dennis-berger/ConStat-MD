@@ -35,8 +35,9 @@ def generate_code(model, tokenizer, task_description, test_code):
         f"Write only the Python function code for the following task:\n"
         f"{task_description}\n"
         f"The function must be named '{function_name}'.\n"
-        f"Do not include any explanations, comments, or examples. Provide only the function code."
+        f"Include any necessary import statements. Do not include any explanations, comments, or examples."
     )
+
     messages = [
         {"role": "system", "content": "You are a coding assistant that provides only Python code snippets."},
         {"role": "user", "content": prompt}
