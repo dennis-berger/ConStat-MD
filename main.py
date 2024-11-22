@@ -11,10 +11,10 @@ def clean_code(generated_code):
         generated_code = generated_code.replace("```", "").strip()  # Remove closing ```
     return generated_code
 
-def generate_code(model, tokenizer, task_description, test_code):
-    function_name = extract_function_name_from_tests(test_code)
+def generate_code(model, tokenizer, task_description, correct_code):
+    function_name = extract_function_name_from_code(correct_code)
     if not function_name:
-        print(test_code)
+        print(correct_code)
         raise ValueError("Function name could not be extracted from test cases.")
 
     # Define prompt to get only the function code
@@ -23,6 +23,7 @@ def generate_code(model, tokenizer, task_description, test_code):
         f"{task_description}\n"
         f"The function must be named '{function_name}'."
     )
+    print(prompt)
     messages = [
         {"role": "system", "content": "You are a coding assistant that provides only Python code snippets."},
         {"role": "user", "content": prompt}
@@ -46,23 +47,21 @@ def generate_code(model, tokenizer, task_description, test_code):
     clean_generated_code = clean_code(response)
     return clean_generated_code
 
-def extract_function_name_from_tests(test_cases):
+def extract_function_name_from_code(correct_code):
     """
-    Extracts the function name from the test cases.
+    Extracts the function name from the provided code.
     
     Args:
-        test_cases (list): A list of test case strings.
+        correct_code (str): A string containing the function code.
     
     Returns:
         str: The extracted function name, or None if not found.
     """
-    # Pattern to match function names (e.g., "function_name" in "assert function_name(...)")
-    pattern = r"assert\s+(\w+)\s*\("
-    
-    for test in test_cases:
-        match = re.search(pattern, test)
-        if match:
-            return match.group(1)  # Return the function name
+    # Pattern to match the function name in a Python function definition
+    pattern = r"def\s+(\w+)\s*\("
+    match = re.search(pattern, correct_code)
+    if match:
+        return match.group(1)  # Return the function name
     return None  # Return None if no function name is found
 
 
@@ -113,9 +112,9 @@ def main():
     for example in dataset:
         task_description = example["prompt"]
         test_code = example["test_list"]
-        code_mbpp = example["code"]
+        correct_code = example["code"]
         # Generate code
-        generated_code = generate_code(model, tokenizer, task_description, test_code)
+        generated_code = generate_code(model, tokenizer, task_description, correct_code)
 
         # Run tests on the generated code
         test_results, all_tests_passed = test_generated_code(generated_code, test_code)
