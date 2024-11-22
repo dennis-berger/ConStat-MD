@@ -14,6 +14,7 @@ def clean_code(generated_code):
 def generate_code(model, tokenizer, task_description, test_code):
     function_name = extract_function_name_from_tests(test_code)
     if not function_name:
+        print(test_code)
         raise ValueError("Function name could not be extracted from test cases.")
 
     # Define prompt to get only the function code
@@ -22,7 +23,6 @@ def generate_code(model, tokenizer, task_description, test_code):
         f"{task_description}\n"
         f"The function must be named '{function_name}'."
     )
-    
     messages = [
         {"role": "system", "content": "You are a coding assistant that provides only Python code snippets."},
         {"role": "user", "content": prompt}
@@ -114,7 +114,6 @@ def main():
         task_description = example["prompt"]
         test_code = example["test_list"]
         code_mbpp = example["code"]
-        print(task_description)
         # Generate code
         generated_code = generate_code(model, tokenizer, task_description, test_code)
 
