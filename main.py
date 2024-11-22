@@ -5,10 +5,16 @@ import torch
 import re
 
 def clean_code(generated_code):
-    # Remove Markdown formatting (triple backticks and "python")
+    # Remove Markdown formatting (triple backticks, "python", and any extra text before or after the code)
     if generated_code.startswith("```"):
         generated_code = re.sub(r"```(python)?", "", generated_code)  # Remove ```python or ```
         generated_code = generated_code.replace("```", "").strip()  # Remove closing ```
+    # Remove any descriptive text that might be present before the actual code
+    lines = generated_code.splitlines()
+    code_lines = [line for line in lines if not line.strip().startswith("#") and "def " in line]
+    if code_lines:
+        code_start = lines.index(code_lines[0])
+        generated_code = "\n".join(lines[code_start:])
     return generated_code
 
 def generate_code(model, tokenizer, task_description, correct_code):
