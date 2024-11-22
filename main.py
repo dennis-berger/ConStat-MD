@@ -97,7 +97,6 @@ def main():
     # Load dataset
     # dataset = load_dataset("google-research-datasets/mbpp", "sanitized", split="train")
     dataset = Dataset.load_from_disk("rephrased_dataset")
-    print(dataset)
     # Initialize model and tokenizer
     # try meta-llama/Llama-2-7b-chat-hf
     model_name = "Qwen/Qwen2.5-Coder-7B-Instruct"
@@ -115,7 +114,7 @@ def main():
         task_description = example["prompt"]
         test_code = example["test_list"]
         code_mbpp = example["code"]
-
+        print(task_description)
         # Generate code
         generated_code = generate_code(model, tokenizer, task_description, test_code)
 
