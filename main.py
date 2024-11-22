@@ -25,7 +25,7 @@ def clean_code(generated_code):
     return generated_code
 
 def generate_code(model, tokenizer, task_description, test_code):
-    function_name = extract_function_name_from_code(code_mbpp)
+    function_name = extract_function_name_from_code(test_code)
     if not function_name:
         print(test_code)
         raise ValueError("Function name could not be extracted from code.")
@@ -60,19 +60,19 @@ def generate_code(model, tokenizer, task_description, test_code):
     clean_generated_code = clean_code(response)
     return clean_generated_code
 
-def extract_function_name_from_code(code_mbpp):
+def extract_function_name_from_code(test_code):
     """
     Extracts the function name and arguments from the provided code.
     
     Args:
-        code_mbpp (str): A string containing the function code.
+        test_code (str): A string containing the function code.
     
     Returns:
         str: The extracted function signature (name and arguments), or None if not found.
     """
     # Pattern to match the function name and arguments in a Python function definition
     pattern = r"def\s+(\w+)\s*\(([^)]*)\)"
-    match = re.search(pattern, code_mbpp)
+    match = re.search(pattern, test_code)
     if match:
         function_name = match.group(1)  # Extract the function name
         arguments = match.group(2)  # Extract the arguments
