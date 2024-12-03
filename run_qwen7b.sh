@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH --job-name=codegen_gpu         # Job name
-#SBATCH --output=output.txt            # Output file
+#SBATCH --job-name=codegen_gpu_qwen7b  # Job name for Qwen 7B model
+#SBATCH --output=output_qwen7b.txt     # Output file
 #SBATCH --ntasks=1                     # Number of tasks
 #SBATCH --cpus-per-task=4              # Number of CPU cores per task
 #SBATCH --gres=gpu:rtx4090:1           # Request 1 Nvidia RTX 4090 GPU
@@ -28,8 +28,8 @@ echo "Installing required packages..."
 conda install -y pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia
 pip install transformers datasets "accelerate>=0.26.0"
 
-# Run the Python script
-echo "Running code generation script with GPU support..."
-python /storage/homefs/db18y058/ConStat-MD/main.py
+# Run the Python script for the specific model
+echo "Running code generation script for Qwen 7B with GPU support..."
+python /storage/homefs/db18y058/ConStat-MD/main.py --model Qwen/Qwen2.5-Coder-7B-Instruct
 
 echo "Job finished successfully."

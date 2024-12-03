@@ -6,6 +6,7 @@ import re
 import unittest
 import io
 import sys
+import argparse
 
 def clean_code(generated_code):
     if generated_code.startswith("```"):
@@ -93,14 +94,6 @@ def test_generated_code(generated_code, test_code, dataset_name):
                 print("No check function found in test code.")
                 all_tests_passed = False
                 test_results = [False]
-        elif dataset_name == "bigcode/bigcodebench":
-            # For BigCodeBench, handle unittest-based test cases
-            exec(test_code, globals())
-            suite = unittest.TestLoader().loadTestsFromModule(sys.modules[__name__])
-            test_runner = unittest.TextTestRunner(stream=io.StringIO(), verbosity=2)
-            result = test_runner.run(suite)
-            all_tests_passed = result.wasSuccessful()
-            test_results = [test_case for test_case in result.failures + result.errors]
         else:
             # For other datasets, execute each test case
             for test_case in test_code:
@@ -117,57 +110,59 @@ def test_generated_code(generated_code, test_code, dataset_name):
     return test_results, all_tests_passed
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--model', type=str, required=True, help='Name of the model to run')
+    args = parser.parse_args()
+
+    model_name = args.model
     models = [
         "Qwen/Qwen2.5-Coder-7B-Instruct",
-        "Qwen/Qwen2.5-Coder-14B-Instruct",
         "Qwen/Qwen2.5-Coder-32B-Instruct",
         "meta-llama/Meta-Llama-3.1-8B-Instruct",
-        "meta-llama/Meta-Llama-3.1-70B-Instruct",
-        "meta-llama/Meta-Llama-3.1-405B-Instruct"
+        "meta-llama/Meta-Llama-3.1-70B-Instruct"
     ]
+
+    if model_name not in models:
+        raise ValueError(f"Invalid model name: {model_name}")
 
     datasets_info = [
         ("google-research-datasets/mbpp", "sanitized", "train"),
-        ("openai_humaneval", None, "train"),
-        ("bigcode/bigcodebench", None, "train[:10]")
+        ("google-research-datasets/mbpp", "sanitized", "test"),
+        ("openai_humaneval", None, "train")
     ]
 
-    for model_name in models:
-        model = AutoModelForCausalLM.from_pretrained(
-            model_name,
-            torch_dtype="auto",
-            device_map="auto"
-        )
-        tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model = AutoModelForCausalLM.from_pretrained(
+        model_name,
+        torch_dtype="auto",
+        device_map="auto"
+    )
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-        for dataset_name, config, split in datasets_info:
-            dataset = load_dataset(dataset_name, config, split=split)
-            results = []
-            for example in dataset:
-                if dataset_name == "openai_humaneval":
-                    task_description = example["prompt"]
-                    test_code = example["test"]
-                elif dataset_name == "bigcode/bigcodebench":
-                    task_description = example["complete_prompt"]
-                    test_code = example["test"]
-                else:
-                    task_description = example["prompt"]
-                    test_code = example["test_list"]
-                correct_code = example["code"] if "code" in example else example["canonical_solution"]
-                generated_code = generate_code(model, tokenizer, task_description, correct_code)
-                test_results, all_tests_passed = test_generated_code(generated_code, test_code, dataset_name)
-                result = {
-                    "task_description": task_description,
-                    "generated_code": generated_code,
-                    "test_code": test_code,
-                    "test_results": test_results,
-                    "all_tests_passed": all_tests_passed
-                }
-                results.append(result)
+    for dataset_name, config, split in datasets_info:
+        dataset = load_dataset(dataset_name, config, split=split)
+        results = []
+        for example in dataset:
+            if dataset_name == "openai_humaneval":
+                task_description = example["prompt"]
+                test_code = example["test"]
+            else:
+                task_description = example["prompt"]
+                test_code = example["test_list"]
+            correct_code = example["code"] if "code" in example else example["canonical_solution"]
+            generated_code = generate_code(model, tokenizer, task_description, correct_code)
+            test_results, all_tests_passed = test_generated_code(generated_code, test_code, dataset_name)
+            result = {
+                "task_description": task_description,
+                "generated_code": generated_code,
+                "test_code": test_code,
+                "test_results": test_results,
+                "all_tests_passed": all_tests_passed
+            }
+            results.append(result)
 
-            file_name = f"{model_name.replace('/', '_')}_{dataset_name.replace('/', '_')}_results.json"
-            with open(file_name, "w") as f:
-                json.dump(results, f, indent=4)
+        file_name = f"{model_name.replace('/', '_')}_{dataset_name.replace('/', '_')}_{split}_results.json"
+        with open(file_name, "w") as f:
+            json.dump(results, f, indent=4)
 
 if __name__ == "__main__":
     main()
