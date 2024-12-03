@@ -3,15 +3,15 @@ from datasets import Dataset, load_dataset
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
 import re
+import unittest
+import io
+import sys
 
 def clean_code(generated_code):
-    # Remove Markdown formatting (triple backticks, "python", and any extra text before or after the code)
     if generated_code.startswith("```"):
-        generated_code = re.sub(r"```(python)?", "", generated_code)  # Remove ```python or ```
-        generated_code = generated_code.replace("```", "").strip()  # Remove closing ```
-    # Remove any descriptive text that might be present before or after the actual code
+        generated_code = re.sub(r"```(python)?", "", generated_code)
+        generated_code = generated_code.replace("```", "").strip()
     lines = generated_code.splitlines()
-    # Extract only lines that are part of the code (ignoring any explanations, examples, etc.)
     code_lines = []
     inside_function = False
     for line in lines:
@@ -19,7 +19,7 @@ def clean_code(generated_code):
             inside_function = True
         if inside_function:
             code_lines.append(line)
-        if inside_function and line.strip() == "":  # Empty line after code signals end of function
+        if inside_function and line.strip() == "":
             break
     generated_code = "\n".join(code_lines).strip()
     return generated_code
@@ -30,7 +30,6 @@ def generate_code(model, tokenizer, task_description, test_code):
         print(test_code)
         raise ValueError("Function name could not be extracted from code.")
 
-    # Define prompt to get only the function code
     prompt = (
         f"Write only the Python function code for the following task:\n"
         f"{task_description}\n"
@@ -62,90 +61,113 @@ def generate_code(model, tokenizer, task_description, test_code):
     return clean_generated_code
 
 def extract_function_name_from_code(test_code):
-    """
-    Extracts the function name and arguments from the provided code.
-    
-    Args:
-        test_code (str): A string containing the function code.
-    
-    Returns:
-        str: The extracted function signature (name and arguments), or None if not found.
-    """
-    # Pattern to match the function name and arguments in a Python function definition
     pattern = r"def\s+(\w+)\s*\(([^)]*)\)"
     match = re.search(pattern, test_code)
     if match:
-        function_name = match.group(1)  # Extract the function name
-        arguments = match.group(2)  # Extract the arguments
-        return f"{function_name}({arguments})"  # Return the function signature
-    return None  # Return None if no function name is found
+        function_name = match.group(1)
+        arguments = match.group(2)
+        return f"{function_name}({arguments})"
+    return None
 
-
-def test_generated_code(generated_code, test_cases):
-    # Dictionary to store the results
+def test_generated_code(generated_code, test_code, dataset_name):
     test_results = []
     all_tests_passed = True
-
     try:
-        # Compile and execute the generated code
         exec(generated_code, globals())
-
-        # Run each test case
-        for test_code in test_cases:
-            try:
-                # Execute the test case
-                exec(test_code, globals())
-                test_results.append(True)
-            except AssertionError:
-                # If assertion fails, mark as False
-                test_results.append(False)
+        if dataset_name == "openai_humaneval":
+            # For HumanEval, extract the check function and run it with the generated code
+            exec(test_code, globals())
+            check_function = globals().get("check")
+            if check_function:
+                try:
+                    check_function(globals()[generated_code.split("(")[0]])
+                    test_results.append(True)
+                except AssertionError:
+                    test_results.append(False)
+                    all_tests_passed = False
+                except Exception as e:
+                    print(f"Runtime error during check function execution: {e}")
+                    test_results.append(False)
+                    all_tests_passed = False
+            else:
+                print("No check function found in test code.")
                 all_tests_passed = False
+                test_results = [False]
+        elif dataset_name == "bigcode/bigcodebench":
+            # For BigCodeBench, handle unittest-based test cases
+            exec(test_code, globals())
+            suite = unittest.TestLoader().loadTestsFromModule(sys.modules[__name__])
+            test_runner = unittest.TextTestRunner(stream=io.StringIO(), verbosity=2)
+            result = test_runner.run(suite)
+            all_tests_passed = result.wasSuccessful()
+            test_results = [test_case for test_case in result.failures + result.errors]
+        else:
+            # For other datasets, execute each test case
+            for test_case in test_code:
+                try:
+                    exec(test_case, globals())
+                    test_results.append(True)
+                except AssertionError:
+                    test_results.append(False)
+                    all_tests_passed = False
     except Exception as e:
-        # If the code itself failed to compile, mark all as False
         print(f"Compilation or execution error: {e}")
         all_tests_passed = False
-        test_results = [False] * len(test_cases)
-    
+        test_results = [False] * len(test_code)
     return test_results, all_tests_passed
 
 def main():
-    # Load dataset
-    # dataset = load_dataset("google-research-datasets/mbpp", "sanitized", split="train")
-    dataset = Dataset.load_from_disk("rephrased_dataset")
-    # Initialize model and tokenizer
-    model_name = "Qwen/Qwen2.5-Coder-7B-Instruct"
-    model = AutoModelForCausalLM.from_pretrained(
-        model_name,
-        torch_dtype="auto",
-        device_map="auto"
-    )
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    models = [
+        "Qwen/Qwen2.5-Coder-7B-Instruct",
+        "Qwen/Qwen2.5-Coder-14B-Instruct",
+        "Qwen/Qwen2.5-Coder-32B-Instruct",
+        "meta-llama/Meta-Llama-3.1-8B-Instruct",
+        "meta-llama/Meta-Llama-3.1-70B-Instruct",
+        "meta-llama/Meta-Llama-3.1-405B-Instruct"
+    ]
 
-    results = []
+    datasets_info = [
+        ("google-research-datasets/mbpp", "sanitized", "train"),
+        ("openai_humaneval", None, "train"),
+        ("bigcode/bigcodebench", None, "train[:10]")
+    ]
 
-    # Loop over dataset examples
-    for example in dataset:
-        task_description = example["prompt"]
-        test_code = example["test_list"]
-        correct_code = example["code"]
-        # Generate code
-        generated_code = generate_code(model, tokenizer, task_description, correct_code)
+    for model_name in models:
+        model = AutoModelForCausalLM.from_pretrained(
+            model_name,
+            torch_dtype="auto",
+            device_map="auto"
+        )
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-        # Run tests on the generated code
-        test_results, all_tests_passed = test_generated_code(generated_code, test_code)
+        for dataset_name, config, split in datasets_info:
+            dataset = load_dataset(dataset_name, config, split=split)
+            results = []
+            for example in dataset:
+                if dataset_name == "openai_humaneval":
+                    task_description = example["prompt"]
+                    test_code = example["test"]
+                elif dataset_name == "bigcode/bigcodebench":
+                    task_description = example["complete_prompt"]
+                    test_code = example["test"]
+                else:
+                    task_description = example["prompt"]
+                    test_code = example["test_list"]
+                correct_code = example["code"] if "code" in example else example["canonical_solution"]
+                generated_code = generate_code(model, tokenizer, task_description, correct_code)
+                test_results, all_tests_passed = test_generated_code(generated_code, test_code, dataset_name)
+                result = {
+                    "task_description": task_description,
+                    "generated_code": generated_code,
+                    "test_code": test_code,
+                    "test_results": test_results,
+                    "all_tests_passed": all_tests_passed
+                }
+                results.append(result)
 
-        # Record results
-        result = {
-            "task_description": task_description,
-            "generated_code": generated_code,
-            "test_code": test_code,
-            "test_results": test_results,
-            "all_tests_passed": all_tests_passed
-        }
-        results.append(result)
-    # Save results to a JSON file
-    with open("code_generation_results.json", "w") as f:
-        json.dump(results, f, indent=4)
+            file_name = f"{model_name.replace('/', '_')}_{dataset_name.replace('/', '_')}_results.json"
+            with open(file_name, "w") as f:
+                json.dump(results, f, indent=4)
 
 if __name__ == "__main__":
     main()
