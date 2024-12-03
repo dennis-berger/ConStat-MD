@@ -128,7 +128,7 @@ def main():
     datasets_info = [
         ("google-research-datasets/mbpp", "sanitized", "train"),
         ("google-research-datasets/mbpp", "sanitized", "test"),
-        ("openai_humaneval", None, "train")
+        ("openai_humaneval", None, "test")
     ]
 
     model = AutoModelForCausalLM.from_pretrained(
