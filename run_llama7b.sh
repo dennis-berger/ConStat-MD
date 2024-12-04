@@ -28,8 +28,10 @@ echo "Installing required packages..."
 conda install -y pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia
 pip install transformers datasets "accelerate>=0.26.0"
 
-# Set Hugging Face access token as an environment variable (replace 'your_huggingface_access_token' with your actual token)
-export HUGGINGFACE_TOKEN=your_huggingface_access_token
+# Log in to Hugging Face
+echo "Logging into Hugging Face..."
+HUGGINGFACE_TOKEN=your_huggingface_access_token
+huggingface-cli login --token $HUGGINGFACE_TOKEN --add-to-git-credential
 
 # Run the Python script for the specific model
 echo "Running code generation script for Meta-Llama 7B with GPU support..."
