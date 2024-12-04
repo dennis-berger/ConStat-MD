@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH --job-name=codegen_gpu_llama8b   # Job name for Meta-Llama 7B model
-#SBATCH --output=output_llama8b.txt      # Output file
+#SBATCH --job-name=codegen_gpu_llama3b   # Job name for Meta-Llama 7B model
+#SBATCH --output=output_llama3b.txt      # Output file
 #SBATCH --ntasks=1                       # Number of tasks
 #SBATCH --cpus-per-task=4                # Number of CPU cores per task
 #SBATCH --gres=gpu:rtx4090:1             # Request 1 Nvidia RTX 4090 GPU
@@ -34,7 +34,7 @@ HUGGINGFACE_TOKEN=your_huggingface_access_token
 huggingface-cli login --token $HUGGINGFACE_TOKEN --add-to-git-credential
 
 # Run the Python script for the specific model
-echo "Running code generation script for Meta-Llama 8B with GPU support..."
-python /storage/homefs/db18y058/ConStat-MD/main.py --model meta-llama/Llama-3.1-8B-Instruct
+echo "Running code generation script for Meta-Llama 3B with GPU support..."
+python /storage/homefs/db18y058/ConStat-MD/main.py --model meta-llama/Llama-3.2-3B-Instruct
 
 echo "Job finished successfully."
