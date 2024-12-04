@@ -124,9 +124,9 @@ def main():
     model_name = args.model
     models = [
         "Qwen/Qwen2.5-Coder-7B-Instruct",
-        "Qwen/Qwen2.5-Coder-32B-Instruct",
-        "meta-llama/Meta-Llama-3.1-8B-Instruct",
-        "meta-llama/Meta-Llama-3.1-70B-Instruct"
+        "Qwen/Qwen2.5-Coder-14B-Instruct",
+        "meta-llama/Llama-2-7b-chat-hf",
+        "meta-llama/Llama-2-13b-chat-hf"
     ]
     if model_name not in models:
         raise ValueError(f"Invalid model name: {model_name}")
