@@ -29,7 +29,7 @@ conda install -y pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c 
 pip install transformers datasets "accelerate>=0.26.0"
 
 # Set Hugging Face access token as an environment variable (replace 'your_huggingface_access_token' with your actual token)
-export HUGGINGFACE_TOKEN=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
+export HUGGINGFACE_TOKEN=your_huggingface_access_token
 
 # Run the Python script for the specific model
 echo "Running code generation script for Meta-Llama 7B with GPU support..."
