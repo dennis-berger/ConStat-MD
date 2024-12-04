@@ -126,7 +126,8 @@ def main():
         "Qwen/Qwen2.5-Coder-7B-Instruct",
         "Qwen/Qwen2.5-Coder-14B-Instruct",
         "meta-llama/Llama-2-7b-chat-hf",
-        "meta-llama/Llama-2-13b-chat-hf"
+        "meta-llama/Llama-2-13b-chat-hf",
+        "meta-llama/Llama-3.1-8B-Instruct"
     ]
     if model_name not in models:
         raise ValueError(f"Invalid model name: {model_name}")
