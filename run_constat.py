@@ -69,6 +69,16 @@ for file_name in os.listdir(data_dir):
         scores_ref_models = np.random.randint(0, 2, (10, len(mbpp_test_accuracies)))
         scores_ref_models_ref_data = np.copy(scores_ref_models)
 
+        # Debugging: Check input lengths
+        print("Length of scores_model (model_accuracies):", len(model_accuracies))
+        print("Length of scores_model_ref_data (mbpp_test_accuracies):", len(mbpp_test_accuracies))
+        print("Shape of scores_ref_models:", scores_ref_models.shape)
+        print("Shape of scores_ref_models_ref_data:", scores_ref_models_ref_data.shape)
+
+        # Ensure lengths match
+        assert len(model_accuracies) == len(mbpp_test_accuracies), "Model and MBPP test accuracies lengths do not match."
+        assert scores_ref_models.shape[1] == len(mbpp_test_accuracies), "Reference models and MBPP test lengths do not match."
+
         # Perform contamination test
         result = constat.test(
             model_accuracies,           # Model's accuracy on the current benchmark
@@ -76,6 +86,7 @@ for file_name in os.listdir(data_dir):
             scores_ref_models,          # Dummy reference models
             scores_ref_models_ref_data  # Dummy reference data for the benchmark
         )
+
 
         # Store results with model name and benchmark
         results[file_name] = {
