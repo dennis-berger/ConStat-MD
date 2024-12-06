@@ -68,16 +68,20 @@ for file_name in os.listdir(data_dir):
             model_data = json.load(f)
         model_accuracies = calculate_accuracies(model_data)
 
-        # Perform contamination test
-        print("Shape of model_accuracies:", model_accuracies.shape)
-        print("Shape of mbpp_test_accuracies:", mbpp_test_accuracies.shape)
+        # Debugging lengths
+        print("Length of model_accuracies:", len(model_accuracies))
+        print("Length of mbpp_test_accuracies:", len(mbpp_test_accuracies))
 
         # Generate dummy reference models
         scores_ref_models = np.random.randint(0, 2, (10, len(mbpp_test_accuracies)))
         scores_ref_models_ref_data = np.copy(scores_ref_models)
 
-        print("Dummy reference model shape (scores_ref_models):", scores_ref_models.shape)
-        print("Dummy reference model shape (scores_ref_models_ref_data):", scores_ref_models_ref_data.shape)
+        print("Length of scores_ref_models:", scores_ref_models.shape)
+        print("Length of scores_ref_models_ref_data:", scores_ref_models_ref_data.shape)
+
+        # Ensure all lengths match
+        assert len(model_accuracies) == len(mbpp_test_accuracies), "Model and MBPP test accuracies lengths do not match."
+        assert scores_ref_models.shape[1] == len(mbpp_test_accuracies), "Reference model lengths do not match MBPP test."
 
         # Perform contamination test
         result = constat.test(
@@ -86,6 +90,7 @@ for file_name in os.listdir(data_dir):
             scores_ref_models,          # Dummy reference models
             scores_ref_models_ref_data  # Dummy reference data for the benchmark
         )
+
 
         # Store results with model name and benchmark
         results[file_name] = {
