@@ -23,9 +23,12 @@ def find_files_with_keyword(directory, keyword):
 # Match MBPP test file to its corresponding model
 def match_test_file(model_file, test_files):
     """Find the corresponding MBPP test file for a given model file."""
-    model_name = model_file.split("_google-research-datasets_")[0]
+    model_name = model_file.split("_")[0]
+    print(f"Matching model: {model_name}")
     for test_file in test_files:
+        print(f"Checking test file: {test_file}")
         if model_name in test_file:
+            print(f"Match found: {test_file}")
             return test_file
     raise FileNotFoundError(f"No matching MBPP test file found for {model_file}")
 
