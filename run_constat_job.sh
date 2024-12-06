@@ -8,7 +8,7 @@
 #SBATCH --ntasks=1                        # Single task
 
 # Load Conda module (adjust based on your cluster's configuration)
-module load anaconda3  # Load Conda module (if required)
+module load Anaconda3  # Load Conda module (if required)
 
 # Set up Conda environment for ConStat
 if ! conda info --envs | grep -q constat; then
