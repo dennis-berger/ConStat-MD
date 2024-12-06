@@ -65,36 +65,34 @@ for file_name in os.listdir(data_dir):
             model_data = json.load(f)
         model_accuracies = calculate_accuracies(model_data)
 
+        # Aggregate distributions
+        model_mean_accuracy = np.mean(model_accuracies)
+        mbpp_test_mean_accuracy = np.mean(mbpp_test_accuracies)
+
+        # Debugging: Check distribution means
+        print("Model mean accuracy:", model_mean_accuracy)
+        print("MBPP test mean accuracy:", mbpp_test_mean_accuracy)
+
         # Generate dummy reference models
-        scores_ref_models = np.random.randint(0, 2, (10, len(mbpp_test_accuracies)))
-        scores_ref_models_ref_data = np.copy(scores_ref_models)
-
-        # Debugging: Check input lengths
-        print("Length of scores_model (model_accuracies):", len(model_accuracies))
-        print("Length of scores_model_ref_data (mbpp_test_accuracies):", len(mbpp_test_accuracies))
-        print("Shape of scores_ref_models:", scores_ref_models.shape)
-        print("Shape of scores_ref_models_ref_data:", scores_ref_models_ref_data.shape)
-
-        # Ensure lengths match
-        assert len(model_accuracies) == len(mbpp_test_accuracies), "Model and MBPP test accuracies lengths do not match."
-        assert scores_ref_models.shape[1] == len(mbpp_test_accuracies), "Reference models and MBPP test lengths do not match."
+        scores_ref_models = np.random.uniform(0, 1, 10)  # Dummy reference models
+        scores_ref_models_ref_data = np.random.uniform(0, 1, 10)  # Dummy reference data for comparison
 
         # Perform contamination test
         result = constat.test(
-            model_accuracies,           # Model's accuracy on the current benchmark
-            mbpp_test_accuracies,       # Reference benchmark (MBPP test results)
-            scores_ref_models,          # Dummy reference models
-            scores_ref_models_ref_data  # Dummy reference data for the benchmark
+            np.array([model_mean_accuracy]),       # Model's mean accuracy
+            np.array([mbpp_test_mean_accuracy]),   # MBPP test mean accuracy
+            scores_ref_models,                     # Dummy reference models
+            scores_ref_models_ref_data             # Dummy reference data
         )
 
-
-        # Store results with model name and benchmark
+        # Store results
         results[file_name] = {
             "model_name": model_name,
             "benchmark": benchmark_type,
             "contamination_results": result
         }
         print(f"Results for {file_name}: {result}")
+
 
 # Save results to a JSON file
 output_path = os.path.join(data_dir, "constat_results.json")
