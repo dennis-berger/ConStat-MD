@@ -69,11 +69,22 @@ for file_name in os.listdir(data_dir):
         model_accuracies = calculate_accuracies(model_data)
 
         # Perform contamination test
+        print("Shape of model_accuracies:", model_accuracies.shape)
+        print("Shape of mbpp_test_accuracies:", mbpp_test_accuracies.shape)
+
+        # Generate dummy reference models
+        scores_ref_models = np.random.randint(0, 2, (10, len(mbpp_test_accuracies)))
+        scores_ref_models_ref_data = np.copy(scores_ref_models)
+
+        print("Dummy reference model shape (scores_ref_models):", scores_ref_models.shape)
+        print("Dummy reference model shape (scores_ref_models_ref_data):", scores_ref_models_ref_data.shape)
+
+        # Perform contamination test
         result = constat.test(
             model_accuracies,           # Model's accuracy on the current benchmark
             mbpp_test_accuracies,       # Reference benchmark (MBPP test results)
-            np.random.randint(0, 2, (10, len(mbpp_test_accuracies))),  # Dummy reference models
-            mbpp_test_accuracies        # Reference benchmark for comparison
+            scores_ref_models,          # Dummy reference models
+            scores_ref_models_ref_data  # Dummy reference data for the benchmark
         )
 
         # Store results with model name and benchmark
