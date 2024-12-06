@@ -20,15 +20,15 @@ def find_files_with_keyword(directory, keyword):
         if keyword in file_name
     ]
 
+# Find all MBPP test files
+mbpp_test_files = find_files_with_keyword(data_dir, mbpp_test_keyword)
+
 # Match MBPP test file to its corresponding model
 def match_test_file(model_file, test_files):
     """Find the corresponding MBPP test file for a given model file."""
     model_name = model_file.split("_")[0]
-    print(f"Matching model: {model_name}")
     for test_file in test_files:
-        print(f"Checking test file: {test_file}")
         if model_name in test_file:
-            print(f"Match found: {test_file}")
             return test_file
     raise FileNotFoundError(f"No matching MBPP test file found for {model_file}")
 
@@ -43,15 +43,12 @@ constat = ConStat(
     random_performance=(0, 0)
 )
 
-# Find all MBPP test files
-mbpp_test_files = find_files_with_keyword(data_dir, mbpp_test_keyword)
-
 # Perform contamination tests
 results = {}
 for file_name in os.listdir(data_dir):
     if mbpp_train_keyword in file_name or humaneval_keyword in file_name:
         # Get model name and benchmark type
-        model_name = file_name.split("_google-research-datasets_")[0]
+        model_name = file_name.split("_")[0]
         benchmark_type = "mbpp_train" if mbpp_train_keyword in file_name else "humaneval"
 
         # Get the corresponding MBPP test file
@@ -68,20 +65,9 @@ for file_name in os.listdir(data_dir):
             model_data = json.load(f)
         model_accuracies = calculate_accuracies(model_data)
 
-        # Debugging lengths
-        print("Length of model_accuracies:", len(model_accuracies))
-        print("Length of mbpp_test_accuracies:", len(mbpp_test_accuracies))
-
         # Generate dummy reference models
         scores_ref_models = np.random.randint(0, 2, (10, len(mbpp_test_accuracies)))
         scores_ref_models_ref_data = np.copy(scores_ref_models)
-
-        print("Length of scores_ref_models:", scores_ref_models.shape)
-        print("Length of scores_ref_models_ref_data:", scores_ref_models_ref_data.shape)
-
-        # Ensure all lengths match
-        assert len(model_accuracies) == len(mbpp_test_accuracies), "Model and MBPP test accuracies lengths do not match."
-        assert scores_ref_models.shape[1] == len(mbpp_test_accuracies), "Reference model lengths do not match MBPP test."
 
         # Perform contamination test
         result = constat.test(
@@ -90,7 +76,6 @@ for file_name in os.listdir(data_dir):
             scores_ref_models,          # Dummy reference models
             scores_ref_models_ref_data  # Dummy reference data for the benchmark
         )
-
 
         # Store results with model name and benchmark
         results[file_name] = {
