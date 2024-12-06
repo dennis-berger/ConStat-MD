@@ -14,9 +14,10 @@ module load Anaconda3  # Load Conda module (if required)
 if ! conda info --envs | grep -q constat; then
     conda create -n constat python=3.10 -y
 fi
-conda activate constat
+source activate constat
 
-python -m pip install -e .
+pip install .
+pip install loguru FuzzyTM --upgrade bottleneck
 
 # Run the Python analysis script
 python run_constat.py
