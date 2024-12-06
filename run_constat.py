@@ -73,9 +73,14 @@ for file_name in os.listdir(data_dir):
         print("Model mean accuracy:", model_mean_accuracy)
         print("MBPP test mean accuracy:", mbpp_test_mean_accuracy)
 
-        # Generate dummy reference models
-        scores_ref_models = np.random.uniform(0, 1, 10)  # Dummy reference models
-        scores_ref_models_ref_data = np.random.uniform(0, 1, 10)  # Dummy reference data for comparison
+        # Generate dummy reference models as 2D arrays
+        num_reference_models = 10
+        scores_ref_models = np.random.uniform(0, 1, (num_reference_models, 1))  # Shape: (10, 1)
+        scores_ref_models_ref_data = np.random.uniform(0, 1, (num_reference_models, 1))  # Shape: (10, 1)
+
+        # Debugging: Check shapes of dummy models
+        print("Shape of scores_ref_models:", scores_ref_models.shape)
+        print("Shape of scores_ref_models_ref_data:", scores_ref_models_ref_data.shape)
 
         # Perform contamination test
         result = constat.test(
@@ -92,6 +97,7 @@ for file_name in os.listdir(data_dir):
             "contamination_results": result
         }
         print(f"Results for {file_name}: {result}")
+
 
 
 # Save results to a JSON file
