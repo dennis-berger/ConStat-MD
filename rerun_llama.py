@@ -4,8 +4,8 @@ import re
 
 
 # Directory paths
-input_folder = "../results"
-output_folder = "../processed_results"
+input_folder = "./results"
+output_folder = "./processed_results"
 
 # Ensure output folder exists
 os.makedirs(output_folder, exist_ok=True)

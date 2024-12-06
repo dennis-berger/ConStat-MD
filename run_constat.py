@@ -4,7 +4,7 @@ import numpy as np
 from constat import ConStat
 
 # Directory containing the JSON files
-data_dir = "../processed_results/"
+data_dir = "./processed_results/"
 
 # Define file keywords
 mbpp_test_keyword = "google-research-datasets_mbpp_test_results.json"
